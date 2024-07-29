@@ -18,7 +18,8 @@ const getData = async () => {
     const usd=await AsyncStorage.getItem("usd");
     const transaction=await AsyncStorage.getItem("transaction");
     const name=await AsyncStorage.getItem("name");
-    return JSON.stringify({name:name, token:token,usd:usd,transaction:transaction });
+    const sc=await AsyncStorage.getItem("sc");
+    return JSON.stringify({name:name, sc:sc, token:token,usd:usd,transaction:transaction });
   } catch (error) {
     console.log("Error getting token:", error);
   }

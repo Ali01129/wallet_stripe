@@ -12,6 +12,9 @@ import SendCard from "@/components/SendCard";
 import CustomSolidButton from "@/components/CustomSolidButton";
 import { StatusBar } from "expo-status-bar";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import BASE_URL from "@/utills";
+import {getData} from '../storage';
+
 interface FormValues {
   address: string;
   amount: number;
@@ -30,8 +33,41 @@ const Send: React.FC = () =>  {
     values: FormValues,
     actions: FormikHelpers<FormValues>
   ) => {
-   
+    try {
+      const retrievedData: any = await getData();
+      if (!retrievedData) {
+        throw new Error('Failed to retrieve data');
+      }
+      const parsedData = JSON.parse(retrievedData);
+      const token: any = parsedData.token;
+      if (!token) {
+        throw new Error('Token not found');
+      }
+      const response = await fetch(`${BASE_URL}/transaction/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'auth-token': token,
+        },
+        body: JSON.stringify({
+          address: values.address,
+          amount: values.amount,
+        }),
+      });
+      const data = await response.json();
+      if (data.status==='error') {
+        Alert.alert('Error', data.error);
+      } else {
+        Alert.alert('Success', 'Transaction successful');
+      }
+    } catch (error:any) {
+      Alert.alert('Error', error.message || 'An unexpected error occurred');
+    }
+    finally {
+      router.push('home');
+    }
   };
+  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -86,12 +122,7 @@ const Send: React.FC = () =>  {
               </Text>
             )}
 
-            <View
-              style={{
-                justifyContent: "center",
-                alignContent: "flex-end",
-              }}
-            >
+            <View style={{justifyContent: "center",alignContent: "flex-end",}}>
               <CustomSolidButton
                 text={"Send"}
                 onPress={() => handleSubmit()}

@@ -19,6 +19,8 @@ import * as Yup from "yup";
 import CustomSolidButton from "@/components/CustomSolidButton";
 import { StatusBar } from "expo-status-bar";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import BASE_URL from "@/utills";
+import { getData } from "../storage";
 
 // Define the interface for form values
 interface FormValues {
@@ -46,6 +48,38 @@ const WithDraw: React.FC = () => {
     values: FormValues,
     actions: FormikHelpers<FormValues>
   ) => {
+    try {
+      const retrievedData: any = await getData();
+      if (!retrievedData) {
+        throw new Error('Failed to retrieve data');
+      }
+      const parsedData = JSON.parse(retrievedData);
+      const token: any = parsedData.token;
+      if (!token) {
+        throw new Error('Token not found');
+      }
+      const response = await fetch(`${BASE_URL}/transaction/withdraw`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'auth-token': token,
+        },
+        body: JSON.stringify({
+          amount: values.amount,
+        }),
+      });
+      const data = await response.json();
+      if (data.status==='error') {
+        Alert.alert('Error', data.error);
+      } else {
+        Alert.alert('Success', 'Transaction successful');
+      }
+    } catch (error:any) {
+      Alert.alert('Error', error.message || 'An unexpected error occurred');
+    }
+    finally {
+      router.push('home');
+    }
   };
 
   return (

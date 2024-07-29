@@ -25,7 +25,7 @@ const TransCard: React.FC<TransCardProps> = ({ name, date, price, type }) => {
             <Text style={styles.time}>{date}</Text>
           </View>
         </View>
-        <Text style={styles.payment}>${price}</Text>
+        <Text style={styles.payment}>sc.{price}</Text>
       </View>
     </View>
   );

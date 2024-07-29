@@ -2,14 +2,19 @@ import { Image, StyleSheet, Text, View, TouchableOpacity, ScrollView, Modal, Ref
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ColorPalette } from '@/constants/Colors';
-import { FontAwesome6 } from '@expo/vector-icons';
+//icons
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { MaterialIcons } from '@expo/vector-icons';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+
 import { router } from 'expo-router';
 import TransCard from '@/components/transCard';
 import PackCard from '@/components/packCard';
 import SizedBox from '@/components/sizedbox';
 import Images from "@/constants/Images";
-import { getData } from '../storage';
+import { getData, saveData } from '../storage';
+import BASE_URL from '../../utills';
 
 const HomeIndex = () => {
 
@@ -21,13 +26,14 @@ const HomeIndex = () => {
   }
 
   const [usd, setUsd] = useState<any>(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('Transactions');
   const [modalVisible, setModalVisible] = useState(false);
   const [mainImage, setMainImage] = useState(Images.amongus);
   const images = [Images.amongus, Images.goku, Images.zoro, Images.amongus];
   const [name, setName] = useState('');
+  const [sc,setSc]=useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -37,6 +43,7 @@ const HomeIndex = () => {
           const parsedData = JSON.parse(retrievedData);
           setUsd(parsedData.usd);
           setName(parsedData.name);
+          setSc(parsedData.sc);
           const parsedData2 = JSON.parse(parsedData.transaction);
           setTransactions(parsedData2);
         }
@@ -51,16 +58,24 @@ const HomeIndex = () => {
     setRefreshing(true);
     try {
       const retrievedData:any = await getData();
-      if (retrievedData) {
-        const parsedData = JSON.parse(retrievedData);
-        setUsd(parsedData.usd);
-        setName(parsedData.name);
-        const parsedData2 = JSON.parse(parsedData.transaction);
-        setTransactions(parsedData2);
-      }
+      const parsedData = JSON.parse(retrievedData);
+      const token:any = parsedData.token;
+      
+      const response2=await fetch(`${BASE_URL}/wallet/all`,{
+        method:'GET',
+        headers:{
+          'Content-Type':'application/json',
+          'auth-token':token,
+        },
+      });
+      const data=await response2.json();
+      setUsd(data.usd);
+      setName(data.name);
+      setSc(data.sc);
+      setTransactions(data.transactions);
+      saveData(token, data.name, data.usd, data.sc, data.transactions);
     } catch (error) {
       console.error("Error refreshing data:", error);
-      // Handle error appropriately here
     } finally {
       setRefreshing(false);
     }
@@ -113,26 +128,30 @@ const HomeIndex = () => {
         <TouchableOpacity onPress={() => setModalVisible(true)}>
           <Image source={mainImage} style={styles.pic} />
         </TouchableOpacity>
-
       </View>
 
       <View style={styles.card}>
-        <Text style={[styles.subtitle, { color: "black", fontSize: 14 }]}>
-          Balance
-        </Text>
-        <Text style={[styles.title, { color: "black" }]}>${usd}</Text>
+        <View style={{flexDirection:'row'}}>
+        <View style={{flex:1}}>
+          <Text style={[styles.subtitle, { color: "black", fontSize: 14 }]}>
+            Balance
+          </Text>
+          <Text style={[styles.title, { color: "black" }]}>${usd}</Text>
+        </View>
+        <View style={{marginRight:20}}>
+          <Text style={[styles.subtitle, { color: "black", fontSize: 14 }]}>
+            SmartCoin
+          </Text>
+          <Text style={[styles.title, { color: "black" }]}>sc.{sc}</Text>
+        </View>
+        </View>
 
-        <View
-          style={{
-            justifyContent: "space-between",
-            flexDirection: "row",
-            marginTop: 20,
-          }}
-        >
+
+        <View style={{justifyContent: "space-between",flexDirection: "row",marginTop: 20,}}>
           <View style={styles.menuItem}>
             <TouchableOpacity onPress={() => router.push('send')}>
               <View style={styles.menu1}>
-                <FontAwesome6 name="money-bill-transfer" size={20} color={ColorPalette.text} />
+                <Ionicons name="send" size={20} color={ColorPalette.text}/>
               </View>
             </TouchableOpacity>
             <Text style={styles.menuText}>Send</Text>
@@ -140,7 +159,7 @@ const HomeIndex = () => {
           <View style={styles.menuItem}>
             <TouchableOpacity onPress={() => router.push('deposit')}>
               <View style={styles.menu1}>
-                <MaterialIcons name="currency-exchange" size={20} color={ColorPalette.text} />
+                <FontAwesome name="money" size={20} color={ColorPalette.text} />
               </View>
             </TouchableOpacity>
             <Text style={styles.menuText}>Deposit</Text>
@@ -148,7 +167,7 @@ const HomeIndex = () => {
           <View style={styles.menuItem}>
             <TouchableOpacity onPress={() => router.push('withdraw')}>
               <View style={styles.menu1}>
-                <MaterialIcons name="currency-exchange" size={20} color={ColorPalette.text} />
+                <FontAwesome6 name="money-bill-trend-up" size={20} color={ColorPalette.text} />
               </View>
             </TouchableOpacity>
             <Text style={styles.menuText}>Withdraw</Text>

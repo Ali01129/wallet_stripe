@@ -9,6 +9,8 @@ import { router } from "expo-router";
 import ConversionInputField from "@/components/conversionInputField";
 import SwapButton from "@/components/swapButton";
 import { StatusBar } from "expo-status-bar";
+import { getData } from "../storage";
+import BASE_URL from "@/utills";
 
 const Conversion = () => {
   const [dollarValue, setDollarValue] = useState<string>("");
@@ -16,8 +18,8 @@ const Conversion = () => {
   const [isFirstDollar, setIsFirstDollar] = useState<boolean>(true);
   const [isFirstFocused, setIsFirstFocused] = useState<boolean>(false);
   const [isSecondFocused, setIsSecondFocused] = useState<boolean>(false);
-  const dollarToCoinRate = 0.22;
-  const coinToDollar = 22;
+  const dollarToCoinRate = 5;
+  const coinToDollar = 0.2;
 
   const handleNumpadPress = (button: string) => {
     if (isFirstFocused && isFirstDollar) {
@@ -90,7 +92,39 @@ const Conversion = () => {
   );
 
   const handleConvert = async () => {
-   
+    try {
+      const retrievedData: any = await getData();
+      if (!retrievedData) {
+        throw new Error('Failed to retrieve data');
+      }
+      const parsedData = JSON.parse(retrievedData);
+      const token: any = parsedData.token;
+      if (!token) {
+        throw new Error('Token not found');
+      }
+      const response = await fetch(`${BASE_URL}/transaction/convert`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'auth-token': token,
+        },
+        body: JSON.stringify({
+          amount: isFirstDollar ? dollarValue : coinValue,
+          DtoSc: isFirstDollar,
+        }),
+      });
+      const data = await response.json();
+      if (data.status==='error') {
+        Alert.alert('Error', data.error);
+      } else {
+        Alert.alert('Success', 'Conversion successful');
+      }
+    } catch (error:any) {
+      Alert.alert('Error', error.message || 'An unexpected error occurred');
+    }
+    finally {
+      router.push('home');
+    }
   };
 
   return (
